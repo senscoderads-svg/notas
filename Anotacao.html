@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plano de Ensino Dinâmico - Google Docs</title>
+    <style>
+        * { 
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        } 
+
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            background-color: #ffffff;
+            color: #000000;
+            line-height: 1.4;
+            padding: 40px 20px;
+        }
+
+        .wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header-principal {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .header-principal h1 {
+            font-size: 22px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+
+        .header-principal h4 {
+            font-size: 14px;
+            font-style: italic;
+            font-weight: normal;
+        }
+
+        /* Área de controle sutil */
+        .painel-controle {
+            background-color: #f9f9f9;
+            border: 1px dashed #000000;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .btn-atualizar {
+            background-color: #ffffff;
+            color: #000000;
+            border: 1px solid #000000;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+
+        .btn-atualizar:hover {
+            background-color: #e0e0e0;
+        }
+
+        .status-sync {
+            font-size: 13px;
+            color: #555555;
+            font-style: italic;
+        }
+
+        .lista-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .card { 
+            background-color: #ffffff; 
+            border: 1px solid #000000;
+            padding: 15px 20px;
+            position: relative; 
+        }
+
+        .card h3 {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            padding-right: 30px;
+        }
+
+        .card p {
+            font-size: 14px;
+            text-align: justify;
+        }
+
+        .btn-excluir {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #000000;
+            font-size: 18px;
+            cursor: pointer;
+            font-weight: bold;
+            opacity: 0.3;
+        }
+
+        .btn-excluir:hover {
+            opacity: 1;
+            color: #ff0000;
+        }
+
+        .loading-txt {
+            text-align: center;
+            font-style: italic;
+            padding: 20px;
+        }
+    </style> 
+</head> 
+<body> 
+
+    <div class="wrapper">
+        <header class="header-principal">
+            <h1>CAMADAS DE UM SOFTWARE:</h1> 
+            <h4>Sincronizado automaticamente a partir do plano de documentação do Google Docs</h4> 
+        </header> 
+
+        <!-- Painel para monitorar e forçar a sincronização -->
+        <div class="painel-controle">
+            <span class="status-sync" id="statusTexto">Conectando ao Google Docs...</span>
+            <button class="btn-atualizar" onclick="carregarDadosGoogleDocs()">🔄 Sincronizar Agora</button>
+        </div>
+
+        <!-- Lista dinâmica onde o JavaScript vai injetar as informações -->
+        <div class="lista-cards" id="listaCards">
+            <div class="loading-txt">Carregando conteúdo do documento...</div>
+        </div> 
+    </div>
+
+    <script>
+        // URL pública baseada no seu iframe gerado pelo Google Docs
+        const URL_GOOGLE_DOCS = "https://docs.google.com/document/d/e/2PACX-1vSDpTfdHZWpCJh9IOQk1_JFX5pe-AAa-Mt0G47R8fhLtQv1xEy-pn-Obg8bGP8im-X5TYxbILlgaIPF/pub";
+
+        async function carregarDadosGoogleDocs() {
+            const listaCards = document.getElementById('listaCards');
+            const statusTexto = document.getElementById('statusTexto');
+            
+            statusTexto.innerText = "Buscando atualizações...";
+
+            try {
+                // Faz a requisição HTTP para ler a página pública do documento
+                const resposta = await fetch(URL_GOOGLE_DOCS);
+                if (!resposta.ok) throw new Error("Não foi possível acessar o documento.");
+                
+                const htmlTexto = await resposta.text();
+
+                // Cria um elemento temporário para parsear o HTML recebido da API pública do Google
+                const parser = new DOMParser();
+                const docInstancia = parser.parseFromString(htmlTexto, 'text/html');
+                
+                // O conteúdo do Google Docs fica encapsulado dentro de uma div com id 'contents'
+                const corpoDocumento = docInstancia.getElementById('contents');
+                
+                if (!corpoDocumento) {
+                    throw new Error("Formato de documento inválido.");
+                }
+
+                // Limpa a tela antes de renderizar
+                listaCards.innerHTML = "";
+
+                // Divide o texto do documento usando os delimitadores '---'
+                const blocosTexto = corpoDocumento.innerText.split('---');
+
+                blocosTexto.forEach(bloco => {
+                    const linhas = bloco.trim().split('\n').filter(l => l.trim() !== "");
+                    
+                    if (linhas.length >= 2) {
+                        const titulo = linhas[0];
+                        // Junta as linhas restantes caso a descrição tenha quebras de parágrafo
+                        const conteudo = linhas.slice(1).join('<br>'); 
+
+                        // Monta dinamicamente a estrutura das caixas no padrão CEUNSP
+                        const novoCard = document.createElement('div');
+                        novoCard.className = 'card';
+                        novoCard.innerHTML = `
+                            <button class="btn-excluir" onclick="excluirCard(this)">&times;</button>
+                            <h3>${titulo}</h3> 
+                            <p>${conteudo}</p>
+                        `;
+                        listaCards.appendChild(novoCard);
+                    }
+                });
+
+                statusTexto.innerText = "Sincronizado com sucesso!";
+
+            } catch (erro) {
+                console.error(erro);
+                statusTexto.innerText = "Erro ao sincronizar. Verifique a conexão.";
+                listaCards.innerHTML = `<div class="loading-txt" style="color: red;">Falha ao carregar dados locais. Certifique-se de que o documento está publicado para a Web.</div>`;
+            }
+        }
+
+        // Função para deletar visualmente um elemento sem alterar o documento original
+        function excluirCard(botao) {
+            botao.parentElement.remove();
+        }
+
+        // Executa a busca automática assim que a página abre no navegador
+        window.onload = carregarDadosGoogleDocs;
+    </script>
+</body>
+</html>
