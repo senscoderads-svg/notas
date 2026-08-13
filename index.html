@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plano de Ensino Dinâmico - Google Docs</title>
+    <title>Plano de Ensino: Camadas de Software</title>
     <style>
+        /* Configurações Globais baseadas na imagem institucional */
         * { 
             box-sizing: border-box;
             margin: 0;
@@ -12,13 +13,14 @@
         } 
 
         body {
-            font-family: 'Times New Roman', Times, serif;
+            font-family: 'Times New Roman', Times, serif; /* Tipografia acadêmica formal */
             background-color: #ffffff;
             color: #000000;
             line-height: 1.4;
             padding: 40px 20px;
         }
 
+        /* Container Principal */
         .wrapper {
             display: flex;
             flex-direction: column;
@@ -27,6 +29,7 @@
             margin: 0 auto;
         }
 
+        /* Cabeçalho Institucional */
         .header-principal {
             text-align: center;
             margin-bottom: 10px;
@@ -45,47 +48,61 @@
             font-weight: normal;
         }
 
-        /* Área de controle sutil */
-        .painel-controle {
+        /* Formulário de Inserção sutil */
+        .formulario {
             background-color: #f9f9f9;
             border: 1px dashed #000000;
             padding: 15px;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            gap: 10px;
             margin-bottom: 10px;
         }
 
-        .btn-atualizar {
+        .formulario input, .formulario textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #000000;
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        .formulario button {
             background-color: #ffffff;
             color: #000000;
             border: 1px solid #000000;
-            padding: 8px 16px;
+            padding: 8px;
             cursor: pointer;
             font-weight: bold;
             font-size: 14px;
             text-transform: uppercase;
         }
 
-        .btn-atualizar:hover {
+        .formulario button:hover {
             background-color: #e0e0e0;
         }
 
-        .status-sync {
-            font-size: 13px;
-            color: #555555;
-            font-style: italic;
-        }
-
+        /* Lista de Blocos */
         .lista-cards {
             display: flex;
             flex-direction: column;
             gap: 15px;
         }
 
+        /* Título da seção estrutural */
+        .titulo-secao {
+            font-size: 18px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-top: 15px;
+            border-bottom: 2px solid #000000;
+            padding-bottom: 3px;
+        }
+
+        /* Blocos (Cards) no estilo das caixas do Plano de Ensino */
         .card { 
             background-color: #ffffff; 
-            border: 1px solid #000000;
+            border: 1px solid #000000; /* Borda fina preta idêntica à imagem */
             padding: 15px 20px;
             position: relative; 
         }
@@ -94,7 +111,7 @@
             font-size: 16px;
             font-weight: bold;
             margin-bottom: 8px;
-            padding-right: 30px;
+            padding-right: 30px; /* Evita que o texto sobreponha o botão X */
         }
 
         .card p {
@@ -102,6 +119,13 @@
             text-align: justify;
         }
 
+        /* Variação para blocos de aviso importante */
+        .card-aviso {
+            background-color: #fcfcfc;
+            border-left: 5px solid #000000; /* Destaque lateral sóbrio */
+        }
+
+        /* Botão de Excluir discreto */
         .btn-excluir {
             position: absolute;
             top: 10px;
@@ -119,12 +143,6 @@
             opacity: 1;
             color: #ff0000;
         }
-
-        .loading-txt {
-            text-align: center;
-            font-style: italic;
-            padding: 20px;
-        }
     </style> 
 </head> 
 <body> 
@@ -132,91 +150,132 @@
     <div class="wrapper">
         <header class="header-principal">
             <h1>CAMADAS DE UM SOFTWARE:</h1> 
-            <h4>Sincronizado automaticamente a partir do plano de documentação do Google Docs</h4> 
+            <h4>Conforme o tamanho e a complexidade do sistema novas camadas podem ser criadas, mas em geral são essas:</h4> 
         </header> 
 
-        <!-- Painel para monitorar e forçar a sincronização -->
-        <div class="painel-controle">
-            <span class="status-sync" id="statusTexto">Conectando ao Google Docs...</span>
-            <button class="btn-atualizar" onclick="carregarDadosGoogleDocs()">🔄 Sincronizar Agora</button>
-        </div>
+        <!-- Formulário para Inserir Conteúdo Dinamicamente -->
+        <form class="formulario" id="meuFormulario">
+            <input type="text" id="tituloInput" placeholder="Título do Bloco (ex: Camada de Segurança:)" required>
+            <textarea id="textoInput" rows="2" placeholder="Digite a descrição ou conteúdo aqui..." required></textarea>
+            <button type="submit">+ Inserir Novo Bloco</button>
+        </form>
 
-        <!-- Lista dinâmica onde o JavaScript vai injetar as informações -->
-        <div class="lista-cards" id="listaCards">
-            <div class="loading-txt">Carregando conteúdo do documento...</div>
-        </div> 
+        <!-- Div onde os blocos serão gerados -->
+        <div class="lista-cards" id="listaCards"></div> 
     </div>
 
     <script>
-        // URL pública baseada no seu iframe gerado pelo Google Docs
-        const URL_GOOGLE_DOCS = "https://docs.google.com/document/d/e/2PACX-1vSDpTfdHZWpCJh9IOQk1_JFX5pe-AAa-Mt0G47R8fhLtQv1xEy-pn-Obg8bGP8im-X5TYxbILlgaIPF/pub";
+        // SEUS TEXTOS ORIGINAIS ARMAZENADOS DIRETAMENTE NO CÓDIGO
+        const dadosOriginais = [
+            {
+                titulo: "Interface de um sistema:",
+                conteudo: "É a interação entre o usuário e o sistema como: o layout onde visualiza conteúdos.",
+                tipo: "normal"
+            },
+            {
+                titulo: "Negócio de um sistema:",
+                conteudo: "São as regras de negócio (informação que o sistema irá trazer, a forma como as mostramos e as funcionalidades que estarão disponíveis para o usuário) o que o usuário pode ou não fazer no sistema.",
+                tipo: "normal"
+            },
+            {
+                titulo: "Persistência de um sistema:",
+                conteudo: "É a ponte entre negócio e dados. Manipula os dados, acessando e enviando para a camada de dados.",
+                tipo: "normal"
+            },
+            {
+                titulo: "Dados de um sistema:",
+                conteudo: "Armazenamento dos dados em servidores e sistemas de gerenciamento de dados.",
+                tipo: "normal"
+            },
+            {
+                // Marcador especial para gerar o título de seção no momento certo
+                isSeparador: true,
+                tituloSeção: "ESTRUTURA DE DADOS"
+            },
+            {
+                titulo: "Para onde vão os dados?",
+                conteudo: "Armazenamento temporário ou permanente.",
+                tipo: "normal"
+            },
+            {
+                titulo: "Armazenamento temporário:",
+                conteudo: "Onde os dados podem ser manipulados ou processados. Memória RAM -> (Random Access Memory). Chamam-se variáveis esses espaços reservados na memória para guardar dados temporariamente.",
+                tipo: "normal"
+            },
+            {
+                titulo: "Armazenamento permanente:",
+                conteudo: "Onde os dados ficam até serem requisitados pelo sistema. Depende do tipo de sistema e de como as informações precisam ser armazenadas (maior segurança, maior velocidade de acesso ou grande volume). O armazenamento geralmente é feito pelo HD.",
+                tipo: "normal"
+            },
+            {
+                titulo: "<strong>[Importante: HD]</strong>",
+                conteudo: "O hard disk tem uma capacidade grande de armazenamento, porém a velocidade de acesso a esses dados é menor.",
+                tipo: "aviso"
+            },
+            {
+                titulo: "<strong>[Importante: RAM]</strong>",
+                conteudo: "A Random Access Memory tem uma capacidade menor, mas a comunicação entre ela e o processador é mais rápida do que o HD. Por isso, ao fazer um software, é preciso prever que tipo de dado precisará manipular para saber quanto de memória será necessário reservar para executar as tarefas.",
+                tipo: "aviso"
+            }
+        ];
 
-        async function carregarDadosGoogleDocs() {
-            const listaCards = document.getElementById('listaCards');
-            const statusTexto = document.getElementById('statusTexto');
+        const formulario = document.getElementById('meuFormulario');
+        const listaCards = document.getElementById('listaCards');
+
+        // Função responsável por desenhar um bloco na tela
+        function renderizarCard(titulo, conteudo, tipo, noTopo = false) {
+            const novoCard = document.createElement('div');
+            novoCard.className = tipo === 'aviso' ? 'card card-aviso' : 'card';
             
-            statusTexto.innerText = "Buscando atualizações...";
+            novoCard.innerHTML = `
+                <button class="btn-excluir" onclick="excluirCard(this)">&times;</button>
+                <h3>${titulo}</h3> 
+                <p>${conteudo}</p>
+            `;
 
-            try {
-                // Faz a requisição HTTP para ler a página pública do documento
-                const resposta = await fetch(URL_GOOGLE_DOCS);
-                if (!resposta.ok) throw new Error("Não foi possível acessar o documento.");
-                
-                const htmlTexto = await resposta.text();
-
-                // Cria um elemento temporário para parsear o HTML recebido da API pública do Google
-                const parser = new DOMParser();
-                const docInstancia = parser.parseFromString(htmlTexto, 'text/html');
-                
-                // O conteúdo do Google Docs fica encapsulado dentro de uma div com id 'contents'
-                const corpoDocumento = docInstancia.getElementById('contents');
-                
-                if (!corpoDocumento) {
-                    throw new Error("Formato de documento inválido.");
-                }
-
-                // Limpa a tela antes de renderizar
-                listaCards.innerHTML = "";
-
-                // Divide o texto do documento usando os delimitadores '---'
-                const blocosTexto = corpoDocumento.innerText.split('---');
-
-                blocosTexto.forEach(bloco => {
-                    const linhas = bloco.trim().split('\n').filter(l => l.trim() !== "");
-                    
-                    if (linhas.length >= 2) {
-                        const titulo = linhas[0];
-                        // Junta as linhas restantes caso a descrição tenha quebras de parágrafo
-                        const conteudo = linhas.slice(1).join('<br>'); 
-
-                        // Monta dinamicamente a estrutura das caixas no padrão CEUNSP
-                        const novoCard = document.createElement('div');
-                        novoCard.className = 'card';
-                        novoCard.innerHTML = `
-                            <button class="btn-excluir" onclick="excluirCard(this)">&times;</button>
-                            <h3>${titulo}</h3> 
-                            <p>${conteudo}</p>
-                        `;
-                        listaCards.appendChild(novoCard);
-                    }
-                });
-
-                statusTexto.innerText = "Sincronizado com sucesso!";
-
-            } catch (erro) {
-                console.error(erro);
-                statusTexto.innerText = "Erro ao sincronizar. Verifique a conexão.";
-                listaCards.innerHTML = `<div class="loading-txt" style="color: red;">Falha ao carregar dados locais. Certifique-se de que o documento está publicado para a Web.</div>`;
+            if (noTopo) {
+                listaCards.insertBefore(novoCard, listaCards.firstChild);
+            } else {
+                listaCards.appendChild(novoCard);
             }
         }
 
-        // Função para deletar visualmente um elemento sem alterar o documento original
+        // Função para carregar a base de dados inicial
+        function inicializarPagina() {
+            listaCards.innerHTML = "";
+            
+            dadosOriginais.forEach(item => {
+                if (item.isSeparador) {
+                    const h2 = document.createElement('h2');
+                    h2.className = 'titulo-secao';
+                    h2.innerText = item.tituloSeção;
+                    listaCards.appendChild(h2);
+                } else {
+                    renderizarCard(item.titulo, item.conteudo, item.tipo);
+                }
+            });
+        }
+
+        // Lógica para Adicionar manualmente pelo formulário
+        formulario.addEventListener('submit', function(event) {
+            event.preventDefault(); 
+
+            const titulo = document.getElementById('tituloInput').value;
+            const texto = document.getElementById('textoInput').value;
+
+            // Insere o novo elemento customizado direto no topo da lista
+            renderizarCard(titulo, texto, 'normal', true);
+            formulario.reset();
+        });
+
+        // Lógica para Remover da tela
         function excluirCard(botao) {
             botao.parentElement.remove();
         }
 
-        // Executa a busca automática assim que a página abre no navegador
-        window.onload = carregarDadosGoogleDocs;
+        // Executa a carga dos dados assim que o navegador abre o arquivo
+        window.onload = inicializarPagina;
     </script>
-</body>
+
+</body> 
 </html>
