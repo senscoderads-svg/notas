@@ -45,17 +45,40 @@
             font-weight: normal;
         }
 
-        .painel-controle {
+        /* Painel Superior e Formulário Integrado */
+        .formulario-painel {
             background-color: #f9f9f9;
             border: 1px dashed #000000;
-            padding: 15px;
+            padding: 20px;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            gap: 12px;
             margin-bottom: 10px;
         }
 
-        .btn-atualizar {
+        .formulario-painel input, .formulario-painel textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #000000;
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        .linha-acoes {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .status-sync {
+            font-size: 13px;
+            color: #555555;
+            font-style: italic;
+        }
+
+        .btn-acao {
             background-color: #ffffff;
             color: #000000;
             border: 1px solid #000000;
@@ -66,14 +89,23 @@
             text-transform: uppercase;
         }
 
-        .btn-atualizar:hover {
+        .btn-acao:hover {
             background-color: #e0e0e0;
         }
 
-        .status-sync {
-            font-size: 13px;
-            color: #555555;
-            font-style: italic;
+        .btn-salvar {
+            background-color: #000000;
+            color: #ffffff;
+        }
+
+        .btn-salvar:hover {
+            background-color: #333333;
+        }
+
+        .btn-salvar:disabled {
+            background-color: #cccccc;
+            border-color: #cccccc;
+            cursor: not-allowed;
         }
 
         .lista-cards {
@@ -148,10 +180,19 @@
             <h4>Conforme o tamanho e a complexidade do sistema novas camadas podem ser criadas, mas em geral são essas:</h4> 
         </header> 
 
-        <div class="painel-controle">
-            <span class="status-sync" id="statusTexto">Sincronizando com o documento online...</span>
-            <button class="btn-atualizar" onclick="carregarDadosGoogleDocs()">🔄 Sincronizar Agora</button>
-        </div>
+        <!-- Formulário de Entrada que Conecta com a sua API do Google -->
+        <form class="formulario-painel" id="formCadastro">
+            <input type="text" id="tituloInput" placeholder="Título do Bloco (ex: Camada de Segurança:)" required>
+            <textarea id="textoInput" rows="2" placeholder="Digite a descrição ou conteúdo programático aqui..." required></textarea>
+            
+            <div class="linha-acoes">
+                <span class="status-sync" id="statusTexto">Sincronizando com o documento online...</span>
+                <div>
+                    <button type="button" class="btn-acao" onclick="carregarDadosGoogleDocs()">🔄 Sincronizar</button>
+                    <button type="submit" class="btn-acao btn-salvar" id="btnSalvar">💾 Salvar no Google Docs</button>
+                </div>
+            </div>
+        </form>
 
         <div class="lista-cards" id="listaCards">
             <div class="msg-aviso">Buscando conteúdo no Google Docs...</div>
@@ -159,10 +200,13 @@
     </div>
 
     <script>
-        // Link da API do seu documento público
-        const URL_DOCS = "https://google.com";
+        // O link de Leitura Pública (Mantido do passo anterior)
+        const URL_LEITURA_PUB = "https://google.com";
+        
+        // A SUA NOVA URL DA API DE ESCRITA QUE VOCÊ ENVIOU
+        const URL_ESCRITA_API = "https://script.google.com/macros/s/AKfycbwGcNLKZ7c0jN8sF6vuX1L4_M-K1IIMJOvXb4v4hbHUO2GI9cJOhyXZ1fWgygn91E7G/exec";
 
-        // SEU TEXTO ORIGINAL INSERIDO DIRETAMENTE COMO PROTOCOLO DE BACKUP LOCAL
+        // Backup de segurança embutido localmente
         const textoBackupLocal = [
             { titulo: "Interface de um sistema:", conteudo: "É a interação entre o usuário e o sistema como: o layout onde visualiza conteúdos.", tipo: "normal" },
             { titulo: "Negócio de um sistema:", conteudo: "São as regras de negócio (informação que o sistema irá trazer, a forma como as mostramos e as funcionalidades que estarão disponíveis para o usuário) o que o usuário pode ou não fazer no sistema.", tipo: "normal" },
@@ -176,33 +220,29 @@
             { titulo: "[Importante: RAM]", conteudo: "A Random Access Memory tem uma capacidade menor, mas a comunicação entre ela e o processador é mais rápida do que o HD. Por isso, ao fazer um software, é preciso prever que tipo de dado precisará manipular para saber quanto de memória será necessário reservar para executar as tarefas.", tipo: "aviso" }
         ];
 
+        // LOGICA DE LEITURA (Puxa do Docs)
         async function carregarDadosGoogleDocs() {
             const listaCards = document.getElementById('listaCards');
             const statusTexto = document.getElementById('statusTexto');
-            
             statusTexto.innerText = "Atualizando dados...";
 
             try {
-                const resposta = await fetch(URL_DOCS);
+                const resposta = await fetch(URL_LEITURA_PUB);
                 if (!resposta.ok) throw new Error();
-                
                 const htmlTexto = await resposta.text();
 
                 const parser = new DOMParser();
                 const docInstancia = parser.parseFromString(htmlTexto, 'text/html');
                 const corpoDocumento = docInstancia.getElementById('contents');
-                
                 if (!corpoDocumento) throw new Error();
 
                 listaCards.innerHTML = "";
-
                 const blocosTexto = corpoDocumento.innerText.split('---');
 
                 blocosTexto.forEach(bloco => {
-                    const linhas = bloco.trim().split('\n').filter(l => l.trim() !== "");
-                    
+                    const linhas = bloco.split('\n').map(l => l.trim()).filter(l => l !== "");
                     if (linhas.length > 0) {
-                        const primeiraLinha = linhas[0].trim();
+                        const primeiraLinha = linhas[0];
 
                         if (primeiraLinha === "ESTRUTURA DE DADOS") {
                             const h2 = document.createElement('h2');
@@ -211,32 +251,63 @@
                             listaCards.appendChild(h2);
                             
                             if (linhas.length > 1) {
-                                const subTitulo = linhas[1].trim();
-                                const subConteudo = linhas.slice(2).join('<br>');
-                                renderizarBlocoTexto(subTitulo, subConteudo);
+                                renderizarBlocoTexto(linhas[1], linhas.slice(2).join('<br>'));
                             }
                         } else {
-                            const titulo = primeiraLinha;
-                            const conteudo = linhas.slice(1).join('<br>');
-                            renderizarBlocoTexto(titulo, conteudo);
+                            renderizarBlocoTexto(primeiraLinha, linhas.slice(1).join('<br>'));
                         }
                     }
                 });
-
                 statusTexto.innerText = "Sincronizado com o Google Docs!";
-
             } catch (erro) {
-                // Se a API falhar, o código usa o seu texto embutido automaticamente
                 statusTexto.innerText = "Modo Local Ativo (Sem conexão externa)";
                 carregarBackupLocal();
             }
         }
 
-        // Desenha o texto local na tela se o Docs falhar
+        // LOGICA DE ESCRITA (Envia para o Docs através do seu Apps Script)
+        document.getElementById('formCadastro').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            const btnSalvar = document.getElementById('btnSalvar');
+            const statusTexto = document.getElementById('statusTexto');
+            const titulo = document.getElementById('tituloInput').value;
+            const conteudo = document.getElementById('textoInput').value;
+
+            btnSalvar.disabled = true;
+            statusTexto.innerText = "Enviando dados para o Google Docs...";
+
+            // Cria o formato de formulário que a API espera receber
+            const formData = new URLSearchParams();
+            formData.append('titulo', titulo + ":");
+            formData.append('conteudo', conteudo);
+
+            try {
+                // Envia a requisição do tipo POST usando no-cors para evitar bloqueios de CORS do navegador
+                await fetch(URL_ESCRITA_API, {
+                    method: 'POST',
+                    mode: 'no-cors', 
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData
+                });
+
+                statusTexto.innerText = "Salvo com sucesso! Atualizando lista...";
+                document.getElementById('formCadastro').reset();
+                
+                // Aguarda um pequeno tempo para o Google processar e atualiza a lista na tela
+                setTimeout(carregarDadosGoogleDocs, 2200);
+
+            } catch (error) {
+                console.error(error);
+                statusTexto.innerText = "Erro ao salvar remotamente.";
+            } finally {
+                btnSalvar.disabled = false;
+            }
+        });
+
         function carregarBackupLocal() {
             const listaCards = document.getElementById('listaCards');
             listaCards.innerHTML = "";
-            
             textoBackupLocal.forEach(item => {
                 if (item.isSeparador) {
                     const h2 = document.createElement('h2');
@@ -250,28 +321,22 @@
         }
 
         function renderizarBlocoTexto(titulo, conteudo) {
+            const listaCards = document.getElementById('listaCards');
             const novoCard = document.createElement('div');
-            
-            if (titulo.includes("[Importante")) {
-                novoCard.className = 'card card-aviso';
-            } else {
-                novoCard.className = 'card';
-            }
-                        }
+            novoCard.className = titulo.includes("[Importante") ? 'card card-aviso' : 'card';
             
             novoCard.innerHTML = `
                 <button class="btn-excluir" onclick="excluirCard(this)">&times;</button>
                 <h3>${titulo}</h3> 
                 <p>${conteudo}</p>
             `;
-            listaCards.appendChild(novoCard);   
+            listaCards.appendChild(novoCard);
+        }
 
-        // Remove o elemento apenas visualmente na tela do usuário
         function excluirCard(botao) {
             botao.parentElement.remove();
         }
 
-        // Dispara a leitura assim que a página termina de carregar
         window.onload = carregarDadosGoogleDocs;
     </script>
 </body>
